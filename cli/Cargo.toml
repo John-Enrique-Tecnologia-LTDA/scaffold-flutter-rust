@@ -1,0 +1,19 @@
+[package]
+name = "scaffold"
+version = "0.1.0"
+edition = "2024"
+description = "Gera um projeto Flutter (web + Android) + Rust (axum + SeaORM) a partir de um manifest"
+
+[dependencies]
+anyhow = "1"
+clap = { version = "4", features = ["derive"] }
+include_dir = "0.7"
+minijinja = { version = "2", features = ["custom_syntax", "loop_controls"] }
+serde = { version = "1", features = ["derive"] }
+toml = "0.8"
+
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+strip = "symbols"

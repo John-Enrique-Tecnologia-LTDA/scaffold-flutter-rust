@@ -1,0 +1,4 @@
+# O app mora atrás de login; a página de entrada pode ser indexada, os links com token não.
+User-agent: *
+Disallow: /entrar
+Disallow: /api/

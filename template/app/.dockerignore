@@ -1,0 +1,7 @@
+# A imagem web só precisa do código Dart, do pubspec e de web/: fora o build local (o do Android
+# passa de 800 MB), o cache do Dart e o app Android (com a chave de release, se houver
+# android/key.properties).
+build/
+.dart_tool/
+android/
+tool/

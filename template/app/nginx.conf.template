@@ -1,0 +1,113 @@
+# Publica o build web do Flutter e faz o proxy de /api para o backend. As variáveis com prefixo
+# {= env_prefix =} são trocadas no start pelo entrypoint do nginx; as do nginx ($host, $uri) ficam.
+
+# Compressão: o main.dart.js e o .wasm caem para um terço, e o JSON da API também.
+gzip on;
+gzip_vary on;
+gzip_proxied any;
+gzip_min_length 1024;
+gzip_comp_level 6;
+gzip_types text/plain text/css text/javascript application/javascript application/json application/manifest+json
+           application/wasm image/svg+xml font/ttf font/otf application/octet-stream;
+
+server {
+  listen 80;
+  server_name _;
+  root /usr/share/nginx/html;
+  server_tokens off;
+
+  # Cabeçalhos de segurança de toda resposta. Um `add_header` dentro de um location apaga os daqui,
+  # então quem precisa de cabeçalho próprio usa `expires` (cache) ou repete estes.
+  #
+  # CSP: o Flutter (CanvasKit) carrega o motor do gstatic, compila WebAssembly e injeta estilos;
+  # as fontes de reserva vêm do fonts.gstatic; o áudio gerado no navegador toca de blob:.
+  add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'wasm-unsafe-eval' https://www.gstatic.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' wss://$host https://www.gstatic.com https://fonts.gstatic.com; media-src 'self' blob:; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'" always;
+  add_header X-Content-Type-Options "nosniff" always;
+  add_header X-Frame-Options "DENY" always;
+  add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+  add_header Permissions-Policy "camera=(), microphone=(self), geolocation=(), payment=(), usb=()" always;
+  add_header Strict-Transport-Security "max-age=31536000" always;
+
+  # O backend é alcançado pelo nome do serviço na rede interna do Docker.
+  location /api/ {
+    proxy_pass http://${{= env_prefix =}_API_HOST}/api/;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_read_timeout 300s;
+    # a API já manda o nosniff; sem isto sairia repetido
+    proxy_hide_header X-Content-Type-Options;
+  }
+
+  # WebSocket (tempo real, quando existir): repassa o pedido de upgrade.
+  location = /api/ws {
+    proxy_pass http://${{= env_prefix =}_API_HOST}/api/ws;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_read_timeout 120s;
+    proxy_send_timeout 120s;
+  }
+
+  location = /healthz {
+    default_type text/plain;
+    return 200 "ok\n";
+  }
+
+  # Manifest do PWA com o tipo certo e sempre revalidado.
+  location = /manifest.json {
+    types { }
+    default_type application/manifest+json;
+    expires -1;
+    try_files $uri =404;
+  }
+
+  # O service worker nunca fica em cache: é por ele que o app instalado recebe versão nova.
+  location = /sw.js {
+    expires -1;
+    try_files $uri =404;
+  }
+
+  # Arquivos do build: o Flutter não põe hash no nome, então o navegador revalida a cada carga
+  # (304 quando nada mudou). Ícones e a imagem de prévia mudam raramente: uma semana. Arquivo que
+  # não existe é 404 de verdade, não a página do app (quem instala o PWA baixa os ícones e
+  # precisa ver o erro).
+  location ~* ^/(icons/|favicon\.(ico|png|svg)$) {
+    expires 7d;
+    try_files $uri =404;
+  }
+  location ~* \.(?:js|mjs|wasm|json|map|png|jpe?g|webp|gif|svg|ico|txt|ttf|otf|woff2?|bin|frag)$ {
+    expires -1;
+    try_files $uri =404;
+  }
+
+  # Link do email (magic link) e a volta do Google e do Discord (`/login?oauth=`): o
+  # token vai na URL, então a página não manda Referer para ninguém e não fica em cache. Os
+  # cabeçalhos daqui substituem os do server.
+  location ~ ^/(entrar|login)$ {
+    add_header Referrer-Policy "no-referrer" always;
+    add_header Cache-Control "no-store" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-Frame-Options "DENY" always;
+    add_header Strict-Transport-Security "max-age=31536000" always;
+    add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'wasm-unsafe-eval' https://www.gstatic.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' wss://$host https://www.gstatic.com https://fonts.gstatic.com; media-src 'self' blob:; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'" always;
+    try_files /index.html =404;
+  }
+
+  # Política de privacidade e termos de uso: páginas estáticas, fora do app
+  # (o Google, a Play Store e quem ainda não entrou leem sem carregar o Flutter).
+  location ~ ^/(privacidade|termos)$ {
+    expires -1;
+    try_files /$1.html =404;
+  }
+
+  # Aplicação de página única: qualquer rota do app devolve o index, sempre revalidado.
+  location / {
+    expires -1;
+    try_files $uri $uri/ /index.html;
+  }
+}

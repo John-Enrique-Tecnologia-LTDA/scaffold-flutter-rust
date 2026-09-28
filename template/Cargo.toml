@@ -1,0 +1,34 @@
+[workspace]
+resolver = "3"
+# O servidor hoje; o que mais vier entra como crates irmãos.
+members = ["server"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+
+# Ciclo de edição. Sem `[profile.dev.package."*"] opt-level = 3` de propósito: com as dependências
+# otimizadas, o hot-patch (./hot.sh) aplica e em seguida o processo cai com "no reactor running"
+# (o código patchado não enxerga o runtime do tokio). Verificado em set/2026, dx 0.7.10, macOS.
+[profile.dev]
+opt-level = 0
+debug = "line-tables-only"
+split-debuginfo = "unpacked"
+
+[profile.test]
+opt-level = 2
+debug = "line-tables-only"
+
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+strip = "symbols"
+
+# O servidor: o release com unwind. Um pânico num handler do axum derruba só aquele pedido; com
+# `abort` levaria o processo inteiro junto.
+[profile.server]
+inherits = "release"
+panic = "unwind"

@@ -1,0 +1,32 @@
+[package]
+name = "{= crate =}"
+version.workspace = true
+edition.workspace = true
+
+[features]
+# Hot-patch do Rust em desenvolvimento (./hot.sh, `dx serve --hot-patch`). Nunca no build de release.
+hot = ["dep:dioxus-devtools"]
+
+[dependencies]
+dioxus-devtools = { version = "0.7.10", optional = true, features = ["serve"] }
+axum = { version = "0.8", features = ["ws"] }
+tokio = { version = "1", features = ["full"] }
+tower-http = { version = "0.6", features = ["cors", "fs", "trace", "set-header"] }
+sea-orm = { version = "1.1", features = ["sqlx-postgres", "runtime-tokio-rustls", "macros", "with-uuid", "with-chrono"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+uuid = { version = "1", features = ["serde", "v4"] }
+chrono = { version = "0.4", features = ["serde"] }
+anyhow = "1"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+once_cell = "1"
+reqwest = { version = "0.12", features = ["json", "rustls-tls"], default-features = false }
+# contas: o SQL de auth fala direto com o pool do SeaORM pelo sqlx
+sqlx = { version = "0.8", default-features = false, features = ["runtime-tokio", "postgres", "uuid", "chrono", "derive", "json"] }
+# tokens aleatórios, hash para guardar, JWT curto de acesso
+rand = "0.8"
+sha2 = "0.10"
+base64 = "0.22"
+jsonwebtoken = "9"
+dotenvy = "0.15"

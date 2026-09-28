@@ -1,0 +1,78 @@
+# Manifest de exemplo do scaffold-flutter-rust. Gere com:
+#   ./scaffold new examples/tarefas.toml ../tarefas
+
+# Identificador: minúsculas e dígitos, começando por letra. Vira o crate `tarefas-server`, o pacote
+# Dart `tarefas_app`, o banco/usuário do Postgres e o prefixo das variáveis do nginx.
+name = "tarefas"
+display_name = "Tarefas"
+description = "Suas tarefas e listas, no navegador e no celular."
+tagline = "Tudo o que falta fazer, num lugar só."
+
+# Pacote Android = org + "." + name (tech.johnenrique.tarefas); também o esquema de retorno do OAuth.
+org = "tech.johnenrique"
+# Domínio de produção: base da API no app nativo e host dos links do email no Android.
+domain = "tarefas.johnenrique.tech"
+
+[colors]
+# Só `accent` é obrigatória; as outras saem dela quando omitidas.
+accent = "#35D0C0"
+# accent_dark = "#1FA597"
+# accent_light = "#7BEADF"
+# on_accent = "#042622"   # cor da letra da logo
+# glow = "#0F2A27"        # brilho do fundo do login
+
+# Cada entidade vira: tabela no schema.sql, entidade SeaORM, rotas CRUD em /api/<plural> (sempre do
+# dono), model Dart, tela com lista responsiva e formulário, e um destino na navegação. A primeira
+# entidade é a tela inicial.
+[[entities]]
+name = "task"              # snake_case, singular
+plural = "tasks"           # opcional (padrão: name + "s")
+label = "Tarefa"
+label_plural = "Tarefas"
+gender = "f"               # "m" ou "f": "Nova tarefa", "Nenhuma tarefa ainda"
+icon = "task_alt"          # nome de um Icons.* do Material
+
+  # O primeiro campo `string` é o título (obrigatório). Tipos: string, text, int, float, bool.
+  [[entities.fields]]
+  name = "title"
+  type = "string"
+  label = "Título"
+  max = 200
+
+  [[entities.fields]]
+  name = "notes"
+  type = "text"
+  label = "Notas"
+  max = 5000
+
+  [[entities.fields]]
+  name = "priority"
+  type = "int"
+  label = "Prioridade"
+  min = 1
+  max = 5
+  default = 3
+
+  [[entities.fields]]
+  name = "done"
+  type = "bool"
+  label = "Feita"
+
+[[entities]]
+name = "project"
+label = "Projeto"
+label_plural = "Projetos"
+gender = "m"
+icon = "folder_open"
+
+  [[entities.fields]]
+  name = "name"
+  type = "string"
+  label = "Nome"
+  max = 120
+
+  [[entities.fields]]
+  name = "budget"
+  type = "float"
+  label = "Orçamento"
+  min = 0

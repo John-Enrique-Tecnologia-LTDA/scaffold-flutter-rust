@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Só HTTPS, menos a API local de desenvolvimento, alcançada pelo `adb reverse tcp:8080 tcp:8080`
+     (app buildado com o dart-define API_BASE=http://localhost:8080). -->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false" />
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">localhost</domain>
+        <domain includeSubdomains="false">127.0.0.1</domain>
+    </domain-config>
+</network-security-config>

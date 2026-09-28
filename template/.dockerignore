@@ -1,0 +1,6 @@
+# O contexto do build do servidor é a raiz: só entram o workspace e server/.
+target/
+app/
+dumps/
+**/.env
+.git/
