@@ -8,6 +8,7 @@
 //! `__plural__` no nome saem uma vez por entidade.
 
 mod manifest;
+mod skill;
 
 use std::{
     fs,
@@ -48,6 +49,25 @@ enum Cmd {
     Check { manifest: PathBuf },
     /// Imprime um manifest de exemplo comentado.
     Example,
+    /// A skill deste CLI para agentes de IA (Claude Code, Codex, Cursor, Gemini CLI, Copilot...).
+    Skill {
+        #[command(subcommand)]
+        action: SkillCmd,
+    },
+}
+
+#[derive(Subcommand)]
+enum SkillCmd {
+    /// Instala em ~/.agents/skills e nas pastas próprias dos agentes detectados.
+    Install {
+        /// Só mostra onde instalaria.
+        #[arg(long)]
+        dry_run: bool,
+    },
+    /// Remove de todos os agentes.
+    Uninstall,
+    /// Imprime o SKILL.md.
+    Print,
 }
 
 fn main() {
@@ -60,6 +80,9 @@ fn main() {
 fn run() -> Result<()> {
     match Cli::parse().cmd {
         Cmd::Example => print!("{EXAMPLE}"),
+        Cmd::Skill { action: SkillCmd::Install { dry_run } } => skill::install(dry_run)?,
+        Cmd::Skill { action: SkillCmd::Uninstall } => skill::uninstall()?,
+        Cmd::Skill { action: SkillCmd::Print } => print!("{}", skill::rendered()),
         Cmd::Check { manifest } => {
             let ctx = load(&manifest)?;
             let files = plan(&ctx)?;

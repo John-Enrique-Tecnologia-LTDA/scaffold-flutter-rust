@@ -19,7 +19,30 @@ Gera um projeto completo no desenho do bulkscan/jopendaw a partir de um manifest
 ./scaffold check meu.toml              # valida e mostra o que seria gerado
 ./scaffold new meu.toml ../meu-app     # gera; a pasta não pode existir
 ./scaffold new meu.toml ../meu-app --no-post   # só os arquivos
+./scaffold skill install               # instala a skill nos agentes de IA (ver abaixo)
 ```
+
+Binários pré-compilados em `bin/` para macOS (arm64, x64), Linux (x64, arm64; estáticos, musl) e
+Windows (x64). O `./scaffold` (e o `scaffold.cmd` no Windows) escolhe o da plataforma; não precisa
+de Rust para usar.
+
+## Skill para agentes de IA
+
+`skill/SKILL.md` ensina um agente a usar o scaffold de ponta a ponta: entender o domínio, escrever e
+validar o manifest (referência completa e todas as regras), gerar, conferir, subir o projeto,
+a regra do hot-patch, evoluir o projeto depois (entidade/campo novos) e os problemas conhecidos.
+
+```bash
+./scaffold skill install --dry-run     # mostra onde instalaria
+./scaffold skill install               # instala
+./scaffold skill uninstall             # remove de todos
+./scaffold skill print                 # imprime o SKILL.md
+```
+
+Vai sempre para `~/.agents/skills/scaffold-flutter-rust` (lida por Codex, Cursor, Gemini CLI,
+OpenCode, GitHub Copilot, Amp, Goose) e também para a pasta própria dos agentes detectados pela
+pasta de configuração: Claude Code (`~/.claude/skills`), Windsurf, Kiro, Factory Droid, Qwen Code,
+Roo Code, Cline e Junie. O SKILL.md instalado leva o caminho absoluto do `./scaffold` desta cópia.
 
 Depois de escrever, o `new` gera os ícones (Chrome headless), roda `flutter pub get`, `dart format`,
 `cargo fmt` e `git init`. O projeto sai com hot-patch do backend (`./hot.sh`, ver o CLAUDE.md gerado); passo que falha só avisa. Os próximos passos ficam no `CLAUDE.md` gerado.
@@ -39,8 +62,13 @@ min/max. Se algo falhar no meio, a pasta parcial é apagada.
 - `cli/src/manifest.rs`: o manifest, a validação e tudo o que é derivado (nomes do crate/pacote,
   classes, rótulos com gênero, tipos SQL/Rust/Dart, cores que faltam).
 - `cli/src/main.rs`: renderiza tudo em memória, escreve, e roda os passos finais.
+- `cli/src/skill.rs` e `skill/SKILL.md`: a skill e onde ela é instalada em cada agente.
 
-Mudou o template ou o CLI? `./build.sh` recompila e atualiza o `./scaffold` da raiz. Para validar
+Mudou o template, a skill ou o CLI? `./build.sh` recompila os binários de todas as plataformas em
+`bin/` (precisa de `zig` e `cargo-zigbuild`: `brew install zig && cargo install cargo-zigbuild
+--locked`); `./build.sh local` compila só o da máquina. Commite os binários junto com a mudança:
+quem clona usa o `./scaffold` sem compilar. Depois de mudar a skill, rode `./scaffold skill install`
+de novo. Para validar
 uma mudança, gere o exemplo e compile os dois lados:
 
 ```bash
